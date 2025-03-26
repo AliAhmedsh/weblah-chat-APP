@@ -3,9 +3,11 @@ import React from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import { AuthStack } from './AuthStack'
 import { UnAuthStack } from './UnAuthStack'
+import { useSelector } from 'react-redux'
 
 const AppNavigation = () => {
-  const user = null
+  const { user } = useSelector((state) => state?.userReducer)
+  console.log("🚀 ~ AppNavigation ~ user:", user)
   return (
     <NavigationContainer>
       <View style={styles.safeAreaFlex}>

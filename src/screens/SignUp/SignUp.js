@@ -1,7 +1,10 @@
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, ScrollView } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, ScrollView, Alert } from 'react-native'
 import React, { useState } from 'react'
 import styles from './Style';
-
+import { useDispatch } from 'react-redux'
+import { dispatchUser } from '../../redux/slices/userSlice';
+import auth from '@react-native-firebase/auth'
+import firestore from '@react-native-firebase/firestore'; 
 const SignUp = ({ navigation }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -11,7 +14,8 @@ const SignUp = ({ navigation }) => {
     confirmPassword: ''
   });
   const [errors, setErrors] = useState({});
-
+  const [isLoading, setIsLoading] = useState(false); 
+  const dispatch = useDispatch();
   const handleChange = (name, value) => {
     setFormData({
       ...formData,
@@ -64,9 +68,45 @@ const SignUp = ({ navigation }) => {
     return valid;
   };
 
-  const handleSubmit = () => {
-    if (validateForm()) {
-      console.log('Form submitted:', formData);
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+    
+    setIsLoading(true);
+    
+    try {
+      const userCredential = await auth().createUserWithEmailAndPassword(
+        formData.email, 
+        formData.password
+      );
+      
+      const { uid, email } = userCredential.user;
+      const userData = {
+        uid,
+        name: formData.name,
+        email,
+        phone: formData.phone,
+        createdAt: firestore.FieldValue.serverTimestamp(),
+        updatedAt: firestore.FieldValue.serverTimestamp()
+      };
+      
+      await firestore()
+        .collection('users')
+        .doc(uid)
+        .set(userData);
+      
+      dispatch(dispatchUser(userData));
+      
+    } catch (error) {
+      setIsLoading(false);
+      
+      if (error.code === 'auth/email-already-in-use') {
+        Alert.alert('Email already in use.');
+      } else if (error.code === 'auth/invalid-email') {
+        Alert.alert('Invalid email address.');
+      } else {
+        Alert.alert('Sign up failed', error.message);
+        console.error(error);
+      }
     }
   };
 
@@ -138,8 +178,10 @@ const SignUp = ({ navigation }) => {
           {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
         </View>
 
-        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-          <Text style={styles.buttonText}>Sign Up</Text>
+        <TouchableOpacity  style={[styles.button, isLoading && styles.disabledButton]} onPress={handleSubmit} disabled={isLoading}>
+        <Text style={styles.buttonText}>
+        {isLoading ? 'Creating Account...' : 'Sign Up'}
+      </Text>
         </TouchableOpacity>
 
         <View style={styles.loginContainer}>

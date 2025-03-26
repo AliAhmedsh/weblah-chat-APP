@@ -67,6 +67,9 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     fontWeight: 'bold',
   },
+  disabledButton: {
+    backgroundColor: '#cccccc',
+  },
 });
 
 export default styles;

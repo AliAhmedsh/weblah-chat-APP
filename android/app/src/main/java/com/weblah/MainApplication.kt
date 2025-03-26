@@ -1,4 +1,4 @@
-package com.weblah
+package com.weblahChat
 
 import android.app.Application
 import com.facebook.react.PackageList

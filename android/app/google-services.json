@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "286799157218",
+    "project_id": "rocketchat-22eae",
+    "storage_bucket": "rocketchat-22eae.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:286799157218:android:c61f163c85fcd8955b8bbb",
+        "android_client_info": {
+          "package_name": "com.weblahChat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBkHPcxgbJnIoiDcCag1s4FshhWx801Ozk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
