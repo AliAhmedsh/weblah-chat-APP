@@ -1,12 +1,20 @@
 import React from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import Login from '../screens/Login/Login'
+import SignUp from '../screens/SignUp/SignUp'
 
-function AuthStack() {
+export const AuthStack = () => {
   const Stack = createNativeStackNavigator()
-  const screens = {
-   Login
-  }
+  const screens = [
+    {
+      name: 'Login',
+      component: Login
+    },
+    {
+      name: 'SignUp',
+      component: SignUp
+    },
+  ]
 
   return (
     <>
@@ -18,17 +26,14 @@ function AuthStack() {
           animation: 'none',
         }}
       >
-        {Object.entries(screens).map(([name, component]) => (
+        {screens.map((screen) => (
           <Stack.Screen
-            key={name}
-            name={name}
-            component={component}
+            key={screen.name}
+            name={screen.name}
+            component={screen.component}
           />
         ))}
       </Stack.Navigator>
     </>
   )
 }
-
-export default AuthStack
-

@@ -1,15 +1,25 @@
+import { View, Text, StyleSheet } from 'react-native'
 import React from 'react'
 import { NavigationContainer } from '@react-navigation/native'
-import UnAuthStack from './UnAuthStack'
-import AuthStack from './AuthStack'
+import { AuthStack } from './AuthStack'
+import { UnAuthStack } from './UnAuthStack'
 
-export default function AppNavigation() {
-    const user = {uid: '123'}
+const AppNavigation = () => {
+  const user = null
   return (
-    <NavigationContainer
-    >
-      {user?.uid ? <UnAuthStack /> : <AuthStack />}
+    <NavigationContainer>
+      <View style={styles.safeAreaFlex}>
+        {user?.uid ? <UnAuthStack /> : <AuthStack />}
+      </View>
     </NavigationContainer>
   )
 }
 
+export default AppNavigation
+
+const styles = StyleSheet.create({
+  safeAreaFlex: {
+    flex: 1,
+    backgroundColor: 'red'
+  },
+})

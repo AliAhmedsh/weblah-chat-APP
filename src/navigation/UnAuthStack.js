@@ -2,11 +2,14 @@ import React from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import Home from '../screens/Home/Home'
 
-function UnAuthStack() {
+export const UnAuthStack = () => {
   const Stack = createNativeStackNavigator()
-  const screens = {
-   Home
-  }
+  const screens = [
+    {
+      name: 'Home',
+      component: Home
+    }
+  ]
 
   return (
     <>
@@ -18,17 +21,14 @@ function UnAuthStack() {
           animation: 'none',
         }}
       >
-        {Object.entries(screens).map(([name, component]) => (
+        {screens.map((screen) => (
           <Stack.Screen
-            key={name}
-            name={name}
-            component={component}
+            key={screen.name}
+            name={screen.name}
+            component={screen.component}
           />
         ))}
       </Stack.Navigator>
     </>
   )
 }
-
-export default UnAuthStack
-
