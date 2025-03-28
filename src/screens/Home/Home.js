@@ -1,18 +1,21 @@
-import { View, Text, TouchableOpacity, StyleSheet, FlatList, Image } from 'react-native';
-import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, Image, TextInput } from 'react-native';
+import React, { useState } from 'react';
 import { clearState } from '../../redux/slices/userSlice';
 import { useDispatch } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
+import Ionicons  from 'react-native-vector-icons/Ionicons';
 
 const Home = () => {
   const dispatch = useDispatch();
   const navigation = useNavigation();
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Demo chat data
   const chats = [
     {
       id: '1',
       name: 'John Doe',
+      phone: '+1234567890',
+      email: 'john@example.com',
       lastMessage: 'Hey, how are you doing?',
       time: '10:30 AM',
       unread: 2,
@@ -21,6 +24,8 @@ const Home = () => {
     {
       id: '2',
       name: 'Sarah Smith',
+      phone: '+1987654321',
+      email: 'sarah@example.com',
       lastMessage: 'Meeting at 3 PM tomorrow',
       time: '9:45 AM',
       unread: 0,
@@ -29,6 +34,8 @@ const Home = () => {
     {
       id: '3',
       name: 'Work Group',
+      phone: '+1122334455',
+      email: 'work@example.com',
       lastMessage: 'Mike: I sent the files',
       time: 'Yesterday',
       unread: 5,
@@ -37,6 +44,8 @@ const Home = () => {
     {
       id: '4',
       name: 'Mom',
+      phone: '+1555666777',
+      email: 'mom@example.com',
       lastMessage: 'Call me when you get home',
       time: 'Yesterday',
       unread: 0,
@@ -45,6 +54,8 @@ const Home = () => {
     {
       id: '5',
       name: 'David Wilson',
+      phone: '+1444333222',
+      email: 'david@example.com',
       lastMessage: 'Thanks for your help!',
       time: '7/20/23',
       unread: 0,
@@ -52,12 +63,27 @@ const Home = () => {
     },
   ];
 
+  const filteredChats = chats.filter(chat => {
+    const query = searchQuery.toLowerCase();
+    return (
+      chat.name.toLowerCase().includes(query) ||
+      chat.phone.includes(query) ||
+      chat.email.toLowerCase().includes(query)
+    );
+  });
+
   const handleLogout = () => {
     dispatch(clearState());
   };
 
   const renderChatItem = ({ item }) => (
-    <TouchableOpacity style={styles.chatItem}>
+    <TouchableOpacity 
+      style={styles.chatItem}
+      onPress={() => navigation.navigate('Chat', { 
+        chatId: item.id, 
+        chatName: item.name 
+      })}
+    >
       <Image source={{ uri: item.avatar }} style={styles.avatar} />
       <View style={styles.chatContent}>
         <View style={styles.chatHeader}>
@@ -86,12 +112,36 @@ const Home = () => {
         </TouchableOpacity>
       </View>
 
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search by name, phone or email"
+          placeholderTextColor="#888"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCorrect={false}
+          autoCapitalize="none"
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <Ionicons name="close-circle" size={20} color="#888" />
+          </TouchableOpacity>
+        )}
+      </View>
+
       {/* Chat List */}
       <FlatList
-        data={chats}
+        data={filteredChats}
         renderItem={renderChatItem}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContent}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No chats found</Text>
+          </View>
+        }
       />
     </View>
   );
@@ -124,6 +174,24 @@ const styles = StyleSheet.create({
   logoutText: {
     color: 'white',
     fontWeight: '500',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+    marginHorizontal: 15,
+    marginVertical: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
   },
   listContent: {
     paddingBottom: 20,
@@ -180,6 +248,16 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 50,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#888',
   },
 });
 
