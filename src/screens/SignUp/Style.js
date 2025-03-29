@@ -70,6 +70,35 @@ const styles = StyleSheet.create({
   disabledButton: {
     backgroundColor: '#cccccc',
   },
+  avatarContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  avatarButton: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  avatarPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarPlaceholderText: {
+    color: '#555',
+    fontSize: 16,
+  },
+  progressContainer: {
+    marginTop: 10,
+    alignItems: 'center',
+  },
 });
 
 export default styles;
