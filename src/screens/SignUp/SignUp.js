@@ -213,8 +213,51 @@ const SignUp = ({ navigation }) => {
           {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
         </View>
 
-        {/* Rest of your form inputs... */}
-        {/* ... (keep all your existing input fields) ... */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            style={[styles.input, errors.email && styles.errorInput]}
+            placeholder="example@email.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            value={formData.email}
+            onChangeText={(text) => handleChange('email', text)}
+          />
+          {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+        </View>
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Phone Number</Text>
+          <TextInput
+            style={[styles.input, errors.phone && styles.errorInput]}
+            placeholder="+1 234 567 8900"
+            keyboardType="phone-pad"
+            value={formData.phone}
+            onChangeText={(text) => handleChange('phone', text)}
+          />
+          {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+        </View>
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Password</Text>
+          <TextInput
+            style={[styles.input, errors.password && styles.errorInput]}
+            placeholder="At least 6 characters"
+            secureTextEntry
+            value={formData.password}
+            onChangeText={(text) => handleChange('password', text)}
+          />
+          {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+        </View>
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Confirm Password</Text>
+          <TextInput
+            style={[styles.input, errors.confirmPassword && styles.errorInput]}
+            placeholder="Confirm your password"
+            secureTextEntry
+            value={formData.confirmPassword}
+            onChangeText={(text) => handleChange('confirmPassword', text)}
+          />
+          {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
+        </View>
 
         {isLoading && uploadProgress > 0 && (
           <View style={styles.progressContainer}>
