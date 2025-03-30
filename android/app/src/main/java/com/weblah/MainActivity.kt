@@ -1,4 +1,4 @@
-package com.weblahChat
+package com.weblahChatApp
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
