@@ -7,14 +7,18 @@ import {
   Platform,
   Text,
   StyleSheet,
-  SafeAreaView
+  SafeAreaView,
+  Image,
+  Alert
 } from 'react-native';
 import { GiftedChat, Bubble, Send, InputToolbar, Time } from 'react-native-gifted-chat';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import database from '@react-native-firebase/database';
 import auth from '@react-native-firebase/auth';
 import styles from './Style';
-
+import InputField from './InputField';
+import storage from '@react-native-firebase/storage';
+import { PermissionsAndroid } from 'react-native';
 const ChatHeader = ({ chatName, navigation, status }) => {
   return (
     <View style={styles.headerContainer}>
@@ -49,10 +53,92 @@ const Chat = ({ route, navigation }) => {
 
   const senderChatRef = database().ref(`chatRooms/${senderUID}_${receiverUID}`);
   const receiverChatRef = database().ref(`chatRooms/${receiverUID}_${senderUID}`);
-
-  // useLayoutEffect(() => {
-  //   navigation.setOptions({ headerShown: false });
-  // }, [navigation]);
+  const requestStoragePermission = async () => {
+    try {
+      // For Android 13+ we need to request READ_MEDIA_IMAGES instead
+      const permission = Platform.Version >= 33 ? 
+        PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES :
+        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
+  
+      const granted = await PermissionsAndroid.request(
+        permission,
+        {
+          title: "Storage Permission",
+          message: "App needs access to your photos to send images",
+          buttonPositive: "OK",
+          buttonNegative: "Cancel"
+        }
+      );
+      
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } catch (err) {
+      console.warn(err);
+      return false;
+    } 
+  };
+  const handleImageSelect = async (imagePath) => {
+    try {
+      // const hasPermission = await requestStoragePermission();
+      // console.log("Permission granted:", hasPermission);
+      
+      // if (!hasPermission) {
+      //   Alert.alert(
+      //     "Permission Required",
+      //     "Please grant storage permission in settings to send images",
+      //     [
+      //       { text: "Cancel", style: "cancel" },
+      //       { text: "Open Settings", onPress: () => Linking.openSettings() }
+      //     ]
+      //   );
+      //   return;
+      // }
+  
+      await uploadImage(imagePath);
+    } catch (error) {
+      console.error("Error in handleImageSelect:", error);
+    }
+  };
+  const uploadImage = async (imagePath) => {
+    try {
+      const timestamp = Date.now();
+      const fileName = `image_${timestamp}.jpg`;
+      const reference = storage().ref(`chat_images/${senderUID}_${receiverUID}/${fileName}`);
+  
+      // Upload the file
+      const task = reference.putFile(imagePath);
+  
+      // Monitor upload progress
+      task.on('state_changed', (taskSnapshot) => {
+        console.log(`${taskSnapshot.bytesTransferred} transferred out of ${taskSnapshot.totalBytes}`);
+      });
+  
+      // Get download URL after upload completes
+      await task;
+      const downloadUrl = await reference.getDownloadURL();
+      
+      // Send image message
+      await sendImageMessage(downloadUrl);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+    }
+  };
+  const sendImageMessage = async (imageUrl) => {
+    const messageKey = senderChatRef.push().key;
+    const timestamp = Date.now();
+  
+    const msgData = {
+      imageUrl: imageUrl,
+      timestamp: timestamp,
+      senderUID: senderUID,
+      text: '📷 Photo', // Default text for image messages
+    };
+  
+    await senderChatRef.child(messageKey).set(msgData);
+    await receiverChatRef.child(messageKey).set(msgData);
+  };
+  useLayoutEffect(() => {
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
 
   useEffect(() => {
     const handleSnapshot = (snapshot) => {
@@ -64,12 +150,17 @@ const Chat = ({ route, navigation }) => {
             return {
               _id: key,
               text: msg.text,
+              image: msg.imageUrl,
               createdAt: new Date(msg.timestamp),
               user: { 
                 _id: msg.senderUID,
                 name: msg.senderUID === senderUID ? 'You' : userName,
                 avatar: userAvatar 
               },
+              ...(msg?.imageUrl && {
+                image: msg.imageUrl,
+                text: msg.text || '📷 Photo'
+              })
             };
           })
           .sort((a, b) => b.createdAt - a.createdAt);
@@ -149,6 +240,23 @@ const Chat = ({ route, navigation }) => {
           fontSize: 12,
         },
       }}
+      renderMessageImage={(props) => {
+        // Make sure we're using the correct property (image or imageUrl)
+        const imageUri = props.currentMessage.image || props.currentMessage.imageUrl;
+        return (
+          <Image
+            source={{ uri: imageUri }}
+            style={{ 
+              width: 200, 
+              height: 200, 
+              borderRadius: 8,
+              backgroundColor: '#f0f0f0' // Add background color while loading
+            }}
+            resizeMode="cover"
+            onError={(e) => console.log('Image loading error:', e.nativeEvent.error)}
+          />
+        );
+      }}
     />
   );
 
@@ -177,13 +285,13 @@ const Chat = ({ route, navigation }) => {
   );
   
   const renderInputToolbar = (props) => (
-    <InputToolbar
+    <InputField
       {...props}
-      containerStyle={styles.inputToolbarContainer}
-      primaryStyle={styles.inputPrimary}
-      accessoryStyle={styles.accessoryStyle}
+      onImageSelect={handleImageSelect}
+    onCameraPress={handleImageSelect}
+    // onUploadComplete={() => setUploading(false)}
     />
-  );
+  )
   
   if (loading) {
     return (
