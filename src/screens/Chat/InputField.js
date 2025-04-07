@@ -4,16 +4,18 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  Platform,
   Keyboard,
-  ActivityIndicator,
+  Platform,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import ImagePicker from 'react-native-image-crop-picker';
+import Responsive from '../../libs/responsive';
+const { getHeight, getWidth, AppFonts } = Responsive;
 
 const InputField = (props) => {
   const [message, setMessage] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [inputHeight, setInputHeight] = useState(getHeight(4));
 
   const handleSend = () => {
     if (message.trim() === '') return;
@@ -69,53 +71,59 @@ const InputField = (props) => {
       console.log('Camera Error: ', error);
     }
   };
+  const handleContentSizeChange = (event) => {
+    const contentHeight = event.nativeEvent.contentSize.height;
+    const minHeight = getHeight(4.5);
+    const maxHeight = getHeight(7);  
+    const newHeight = Math.min(Math.max(minHeight, contentHeight), maxHeight);
+    setInputHeight(newHeight);
+  };
 
   return (
     <View style={styles.container}>
-      {/* {uploading && (
-        <View style={styles.progressContainer}>
-          <ActivityIndicator size="small" color="#075E54" />
-        </View>
-      )} */}
       <View style={styles.inputContainer}>
-        {/* Attachment button */}
         <TouchableOpacity
           style={styles.iconButton}
           onPress={handleImageSelect}
           disabled={uploading}
         >
-          <Ionicons name="image" size={24} color="#075E54" />
+          <Ionicons name="image" size={getHeight(2.8)} color="#075E54" />
         </TouchableOpacity>
 
-        {/* Camera button */}
         <TouchableOpacity
           style={styles.iconButton}
           onPress={handleCameraPress}
           disabled={uploading}
         >
-          <Ionicons name="camera" size={24} color="#075E54" />
+          <Ionicons name="camera" size={getHeight(2.8)} color="#075E54" />
         </TouchableOpacity>
 
-        {/* Text input */}
         <TextInput
-          style={styles.textInput}
+          style={[styles.textInput, { height: inputHeight }]}
           value={message}
           onChangeText={setMessage}
           placeholder="Type a message..."
           placeholderTextColor="#999"
           multiline
-          onSubmitEditing={handleSend}
+          numberOfLines={2}
+          scrollEnabled={true}
           editable={!uploading}
+          onContentSizeChange={handleContentSizeChange}
+          textAlignVertical="top"
         />
 
-        {/* Send button or microphone */}
-        {message.trim() ? (
+
+        {uploading ? (
+          <View style={styles.uploadIndicator}>
+            <ActivityIndicator size="small" color="#075E54" />
+          </View>
+        ) : message.trim() ? (
           <TouchableOpacity
             style={styles.sendButton}
             onPress={handleSend}
             disabled={uploading}
           >
-            <Ionicons name="send" size={20} color="white" />
+            <Ionicons name="send" size={getHeight(2.4)} color="white" />
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
@@ -123,7 +131,7 @@ const InputField = (props) => {
             onPress={() => console.log('Mic pressed')}
             disabled={uploading}
           >
-            <Ionicons name="mic" size={24} color="#075E54" />
+            <Ionicons name="mic" size={getHeight(2.8)} color="#075E54" />
           </TouchableOpacity>
         )}
       </View>
@@ -134,43 +142,52 @@ const InputField = (props) => {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#f0f0f0',
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    borderTopWidth: 1,
     borderTopColor: '#e5e5e5',
-  },
-  progressContainer: {
-    paddingVertical: 5,
-    alignItems: 'center',
+    paddingVertical: getHeight(1),
+    paddingHorizontal: getWidth(2),
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'white',
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: Platform.OS === 'ios' ? 8 : 0,
+    borderRadius: getHeight(5),
+    paddingHorizontal: getWidth(2),
+    minHeight: getHeight(5),
   },
   iconButton: {
-    padding: 5,
-    marginRight: 5,
+    paddingHorizontal: getWidth(1.5),
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: getWidth(8),
+    minHeight: getHeight(4),
   },
   textInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: AppFonts.t3,
     color: 'black',
-    paddingHorizontal: 10,
-    maxHeight: 100,
-    marginLeft: 5,
+    marginLeft: getWidth(1.5),
+    marginRight: getWidth(1.5),
+    paddingVertical: getHeight(1),
+    maxHeight: getHeight(14),
+    includeFontPadding: false,
+    textAlignVertical: 'top',
   },
+
   sendButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: getHeight(4),
+    height: getHeight(4),
+    borderRadius: getHeight(2),
     backgroundColor: '#075E54',
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 5,
+    marginLeft: getWidth(1),
+  },
+  uploadIndicator: {
+    width: getHeight(4),
+    height: getHeight(4),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: getWidth(1),
   },
 });
 

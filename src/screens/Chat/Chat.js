@@ -18,81 +18,20 @@ import auth from '@react-native-firebase/auth';
 import styles from './Style';
 import InputField from './InputField';
 import storage from '@react-native-firebase/storage';
-import { PermissionsAndroid } from 'react-native';
-const ChatHeader = ({ chatName, navigation, status }) => {
-  return (
-    <View style={styles.headerContainer}>
-      <Ionicons 
-        name="arrow-back" 
-        size={24} 
-        color="white" 
-        onPress={() => navigation.goBack()} 
-        style={styles.backButton}
-      />
-      <View style={styles.headerInfoContainer}>
-        <Text style={styles.headerTitle} numberOfLines={1}>{chatName}</Text>
-        {status && <Text style={styles.headerSubtitle}>{status}</Text>}
-      </View>
-      <View style={styles.headerIcons}>
-        <Ionicons name="videocam" size={24} color="white" style={styles.headerIcon} />
-        <Ionicons name="call" size={20} color="white" style={styles.headerIcon} />
-        <Ionicons name="ellipsis-vertical" size={20} color="white" style={styles.headerIcon} />
-      </View>
-    </View>
-  );
-};
+import ChatHeader from './ChatHeader';
+
 
 const Chat = ({ route, navigation }) => {
   const { userId, userName, userAvatar } = route.params;
   const currentUser = auth().currentUser;
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const senderUID = currentUser.uid;
   const receiverUID = userId;
-
   const senderChatRef = database().ref(`chatRooms/${senderUID}_${receiverUID}`);
   const receiverChatRef = database().ref(`chatRooms/${receiverUID}_${senderUID}`);
-  const requestStoragePermission = async () => {
-    try {
-      // For Android 13+ we need to request READ_MEDIA_IMAGES instead
-      const permission = Platform.Version >= 33 ? 
-        PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES :
-        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
-  
-      const granted = await PermissionsAndroid.request(
-        permission,
-        {
-          title: "Storage Permission",
-          message: "App needs access to your photos to send images",
-          buttonPositive: "OK",
-          buttonNegative: "Cancel"
-        }
-      );
-      
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    } catch (err) {
-      console.warn(err);
-      return false;
-    } 
-  };
   const handleImageSelect = async (imagePath) => {
     try {
-      // const hasPermission = await requestStoragePermission();
-      // console.log("Permission granted:", hasPermission);
-      
-      // if (!hasPermission) {
-      //   Alert.alert(
-      //     "Permission Required",
-      //     "Please grant storage permission in settings to send images",
-      //     [
-      //       { text: "Cancel", style: "cancel" },
-      //       { text: "Open Settings", onPress: () => Linking.openSettings() }
-      //     ]
-      //   );
-      //   return;
-      // }
-  
       await uploadImage(imagePath);
     } catch (error) {
       console.error("Error in handleImageSelect:", error);
@@ -103,20 +42,12 @@ const Chat = ({ route, navigation }) => {
       const timestamp = Date.now();
       const fileName = `image_${timestamp}.jpg`;
       const reference = storage().ref(`chat_images/${senderUID}_${receiverUID}/${fileName}`);
-  
-      // Upload the file
       const task = reference.putFile(imagePath);
-  
-      // Monitor upload progress
       task.on('state_changed', (taskSnapshot) => {
         console.log(`${taskSnapshot.bytesTransferred} transferred out of ${taskSnapshot.totalBytes}`);
       });
-  
-      // Get download URL after upload completes
       await task;
       const downloadUrl = await reference.getDownloadURL();
-      
-      // Send image message
       await sendImageMessage(downloadUrl);
     } catch (error) {
       console.error('Error uploading image:', error);
@@ -130,7 +61,7 @@ const Chat = ({ route, navigation }) => {
       imageUrl: imageUrl,
       timestamp: timestamp,
       senderUID: senderUID,
-      text: '📷 Photo', // Default text for image messages
+      text: '📷 Photo',
     };
   
     await senderChatRef.child(messageKey).set(msgData);
@@ -305,7 +236,7 @@ const Chat = ({ route, navigation }) => {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar backgroundColor="#075E54" barStyle="light-content" />
       <View style={styles.container}>
-        <ChatHeader 
+        <ChatHeader
           chatName={userName} 
           navigation={navigation} 
           status="online" 
