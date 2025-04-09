@@ -1,17 +1,14 @@
-import React, { useState, useEffect, useCallback, useLayoutEffect } from 'react';
-import { 
-  View, 
-  StatusBar, 
-  ActivityIndicator, 
+import React, { useState, useEffect} from 'react';
+import {
+  View,
+  StatusBar,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Text,
-  StyleSheet,
   SafeAreaView,
   Image,
-  Alert
 } from 'react-native';
-import { GiftedChat, Bubble, Send, InputToolbar, Time } from 'react-native-gifted-chat';
+import { GiftedChat, Bubble, Send, Time } from 'react-native-gifted-chat';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import database from '@react-native-firebase/database';
 import auth from '@react-native-firebase/auth';
@@ -19,7 +16,6 @@ import styles from './Style';
 import InputField from './InputField';
 import storage from '@react-native-firebase/storage';
 import ChatHeader from './ChatHeader';
-
 
 const Chat = ({ route, navigation }) => {
   const { userId, userName, userAvatar } = route.params;
@@ -56,20 +52,17 @@ const Chat = ({ route, navigation }) => {
   const sendImageMessage = async (imageUrl) => {
     const messageKey = senderChatRef.push().key;
     const timestamp = Date.now();
-  
+
     const msgData = {
       imageUrl: imageUrl,
       timestamp: timestamp,
       senderUID: senderUID,
       text: '📷 Photo',
     };
-  
+
     await senderChatRef.child(messageKey).set(msgData);
     await receiverChatRef.child(messageKey).set(msgData);
   };
-  useLayoutEffect(() => {
-    navigation.setOptions({ headerShown: false });
-  }, [navigation]);
 
   useEffect(() => {
     const handleSnapshot = (snapshot) => {
@@ -83,10 +76,10 @@ const Chat = ({ route, navigation }) => {
               text: msg.text,
               image: msg.imageUrl,
               createdAt: new Date(msg.timestamp),
-              user: { 
+              user: {
                 _id: msg.senderUID,
                 name: msg.senderUID === senderUID ? 'You' : userName,
-                avatar: userAvatar 
+                avatar: userAvatar
               },
               ...(msg?.imageUrl && {
                 image: msg.imageUrl,
@@ -99,28 +92,27 @@ const Chat = ({ route, navigation }) => {
       }
       setLoading(false);
     };
-  
+
     const checkChatPath = async () => {
       const snapshot1 = await database().ref(`chatRooms/${senderUID}_${receiverUID}`).once('value');
-      
+
       if (snapshot1.exists()) {
         senderChatRef.on('value', handleSnapshot);
       } else {
         setLoading(false);
       }
     };
-  
+
     checkChatPath();
-  
+
     return () => {
       senderChatRef.off('value', handleSnapshot);
       database().ref(`chatRooms/${senderUID}_${receiverUID}`).off('value', handleSnapshot);
     };
   }, [senderUID, receiverUID, userName, userAvatar]);
 
-  const onSend = useCallback(async (newMessages = []) => {
+  const sendMessageToDatabase = async (newMessages) => {
     const message = newMessages[0];
-
     const msgData = {
       text: message.text,
       timestamp: Date.now(),
@@ -130,8 +122,16 @@ const Chat = ({ route, navigation }) => {
     const messageKey = senderChatRef.push().key;
     await senderChatRef.child(messageKey).set(msgData);
     await receiverChatRef.child(messageKey).set(msgData);
-  }, []);
-
+  }
+  const onSend = (newMessages = []) => {
+    if (newMessages.length > 0) {
+      const message = newMessages[0]
+      sendMessageToDatabase(newMessages)
+      setMessages((previousMessages) => GiftedChat.append(previousMessages, message))
+    } else {
+      console.error('Invalid message data')
+    }
+  }
   const renderBubble = (props) => (
     <Bubble
       {...props}
@@ -172,16 +172,15 @@ const Chat = ({ route, navigation }) => {
         },
       }}
       renderMessageImage={(props) => {
-        // Make sure we're using the correct property (image or imageUrl)
         const imageUri = props.currentMessage.image || props.currentMessage.imageUrl;
         return (
           <Image
             source={{ uri: imageUri }}
-            style={{ 
-              width: 200, 
-              height: 200, 
+            style={{
+              width: 200,
+              height: 200,
               borderRadius: 8,
-              backgroundColor: '#f0f0f0' // Add background color while loading
+              backgroundColor: '#f0f0f0'
             }}
             resizeMode="cover"
             onError={(e) => console.log('Image loading error:', e.nativeEvent.error)}
@@ -214,16 +213,15 @@ const Chat = ({ route, navigation }) => {
       </View>
     </Send>
   );
-  
+
   const renderInputToolbar = (props) => (
     <InputField
       {...props}
       onImageSelect={handleImageSelect}
-    onCameraPress={handleImageSelect}
-    // onUploadComplete={() => setUploading(false)}
+      onCameraPress={handleImageSelect}
     />
   )
-  
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -231,20 +229,20 @@ const Chat = ({ route, navigation }) => {
       </View>
     );
   }
-  
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar backgroundColor="#075E54" barStyle="light-content" />
       <View style={styles.container}>
         <ChatHeader
-          chatName={userName} 
-          navigation={navigation} 
-          status="online" 
+          chatName={userName}
+          navigation={navigation}
+          status="online"
         />
-        
+
         <GiftedChat
           messages={messages}
-          onSend={(messages) => onSend(messages)}
+          onSend={onSend}
           user={{ _id: senderUID }}
           renderBubble={renderBubble}
           renderTime={renderTime}
