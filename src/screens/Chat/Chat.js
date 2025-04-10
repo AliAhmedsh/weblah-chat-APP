@@ -1,4 +1,4 @@
-import React, { useState, useEffect} from 'react';
+import React, { useState, useEffect, useRef} from 'react';
 import {
   View,
   StatusBar,
@@ -7,6 +7,9 @@ import {
   Platform,
   SafeAreaView,
   Image,
+  StyleSheet,
+  TouchableOpacity,
+  Text,
 } from 'react-native';
 import { GiftedChat, Bubble, Send, Time } from 'react-native-gifted-chat';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -16,6 +19,8 @@ import styles from './Style';
 import InputField from './InputField';
 import storage from '@react-native-firebase/storage';
 import ChatHeader from './ChatHeader';
+import SoundPlayer from 'react-native-sound-player';
+import Slider from '@react-native-community/slider';
 
 const Chat = ({ route, navigation }) => {
   const { userId, userName, userAvatar } = route.params;
@@ -117,6 +122,10 @@ const Chat = ({ route, navigation }) => {
       text: message.text,
       timestamp: Date.now(),
       senderUID: senderUID,
+      ...(message.voiceMessage && {
+        voiceMessage: message.voiceMessage,
+        duration: message.duration,
+      }),
     };
 
     const messageKey = senderChatRef.push().key;
@@ -132,8 +141,10 @@ const Chat = ({ route, navigation }) => {
       console.error('Invalid message data')
     }
   }
-  const renderBubble = (props) => (
-    <Bubble
+  const renderBubble = (props) => {
+    const isVoiceMessage = !!props.currentMessage.voiceMessage;
+    return(
+      <Bubble
       {...props}
       wrapperStyle={{
         right: {
@@ -187,8 +198,21 @@ const Chat = ({ route, navigation }) => {
           />
         );
       }}
+      renderCustomView={(props) => {
+        if (props.currentMessage.voiceMessage) {
+          return (
+            <VoiceMessagePlayer 
+              uri={props.currentMessage.voiceMessage}
+              duration={props.currentMessage.duration}
+              isCurrentUser={props.currentMessage.user._id === senderUID}
+            />
+          );
+        }
+        return null;
+      }}
     />
-  );
+    )
+  }
 
   const renderTime = (props) => (
     <Time
@@ -270,4 +294,114 @@ const Chat = ({ route, navigation }) => {
     </SafeAreaView>
   );
 };
+const VoiceMessagePlayer = ({ uri, duration, isCurrentUser }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [position, setPosition] = useState(0);
+  const [durationSec, setDurationSec] = useState(0);
+  const intervalRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (isPlaying) stopPlayback();
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [isPlaying]);
+
+  const startPlayback = async () => {
+    try {
+      SoundPlayer.playUrl(uri);
+      setIsPlaying(true);
+      
+      SoundPlayer.onFinishedPlaying((success) => {
+        if (success) stopPlayback();
+      });
+      
+      // Update progress
+      intervalRef.current = setInterval(async () => {
+        try {
+          const info = await SoundPlayer.getInfo();
+          setPosition(info.currentTime);
+          setDurationSec(info.duration);
+        } catch (e) {
+          clearInterval(intervalRef.current);
+        }
+      }, 500);
+      
+    } catch (error) {
+      console.log('Playback error:', error);
+      setIsPlaying(false);
+    }
+  };
+
+  const stopPlayback = () => {
+    try {
+      SoundPlayer.stop();
+      setIsPlaying(false);
+      setPosition(0);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    } catch (error) {
+      console.log('Stop playback error:', error);
+    }
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  return (
+    <View style={voiceMessageStyles.container}>
+      <TouchableOpacity
+        onPress={isPlaying ? stopPlayback : startPlayback}
+        style={voiceMessageStyles.playButton}
+      >
+        <Ionicons 
+          name={isPlaying ? "pause" : "play"} 
+          size={24} 
+          color={isCurrentUser ? "white" : "#075E54"} 
+        />
+      </TouchableOpacity>
+      
+      <Slider
+        style={voiceMessageStyles.slider}
+        value={position}
+        minimumValue={0}
+        maximumValue={durationSec || 1}
+        minimumTrackTintColor={isCurrentUser ? "white" : "#075E54"}
+        maximumTrackTintColor={isCurrentUser ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.2)"}
+        thumbTintColor={isCurrentUser ? "white" : "#075E54"}
+        disabled={true}
+      />
+      
+      <Text style={[
+        voiceMessageStyles.duration,
+        { color: isCurrentUser ? "white" : "#075E54" }
+      ]}>
+        {duration || formatTime(durationSec)}
+      </Text>
+    </View>
+  );
+};
+
+const voiceMessageStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    width: 200,
+  },
+  playButton: {
+    marginRight: 8,
+  },
+  slider: {
+    flex: 1,
+    height: 20,
+    marginHorizontal: 8,
+  },
+  duration: {
+    fontSize: 12,
+    marginLeft: 8,
+  },
+});
 export default Chat;
