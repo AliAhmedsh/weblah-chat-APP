@@ -138,7 +138,7 @@ const InputField = (props) => {
         voiceMessage: downloadUrl,
         duration: recordTime,
       };
-
+console.log(newMessage, 'neewwwwwwwwww')
       props.onSend([newMessage]);
     } catch (error) {
       console.log('Voice message upload error:', error);

@@ -4,6 +4,7 @@ import { clearState } from '../../redux/slices/userSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import firestore from '@react-native-firebase/firestore';
 import database from '@react-native-firebase/database';
 import styles from './Style';
@@ -33,7 +34,6 @@ const Home = () => {
 
             const messages = chatRooms[key];
             const messageArray = Object.values(messages).filter((message) => {
-              // Filter out messages that should be hidden
               return message.text && message.timestamp && message.senderUID;
             });
             
@@ -43,7 +43,15 @@ const Home = () => {
             processedKeys.add(relevantUid);
 
             const latestMessage = messageArray[0];
-            const lastMessage = latestMessage?.text || 'Media message';
+            let lastMessage = latestMessage?.text || 'Media message';
+            
+            // Format message preview
+            if (latestMessage?.imageUrl) {
+              lastMessage = '📷 Photo';
+            } else if (latestMessage?.voiceMessage) {
+              lastMessage = '🎤 Voice message';
+            }
+            
             const messageTime = latestMessage?.timestamp || Date.now();
             const isReadStatus = latestMessage?.senderUID === user?.uid ? 
               true : (latestMessage?.isRead || false);
@@ -56,16 +64,18 @@ const Home = () => {
               
             const userData = userDocSnapshot.exists ? userDocSnapshot.data() : {};
             const userName = userData.firstName || userData.name || userData.nickName || 'User';
+            const userStatus = userData.status || 'Hey there! I am using WhatsApp';
             
             return {
               id: key,
               uid: relevantUid,
               name: userName,
-              email: lastMessage,
+              lastMessage: lastMessage,
+              status: userStatus,
               avatar: userData?.avatarImage || userData?.avatar || 'https://i.pravatar.cc/150?img=3',
               isRead: isReadStatus,
               messageTime,
-              unReadFor: latestMessage?.unReadFor,
+              unreadCount: isReadStatus ? 0 : 1,
             };
           }
           return null;
@@ -81,7 +91,6 @@ const Home = () => {
     setLoading(false);
   };
 
-  // Search all users in Firestore
   const searchAllUsers = async (query) => {
     if (!query) {
       setSearchResults([]);
@@ -111,7 +120,7 @@ const Home = () => {
             id: doc.id,
             uid: userData.uid,
             name: userData.firstName || userData.name || 'User',
-            email: userData.email || '',
+            status: userData.status || 'Hey there! I am using WhatsApp',
             avatar: userData?.avatarImage || userData?.avatar || 'https://i.pravatar.cc/150?img=3',
             isNew: true
           });
@@ -160,28 +169,33 @@ const Home = () => {
           chatId: item.id || `${user.uid}_${item.uid}`
         })}
       >
-        <Image 
-          source={{ uri: item.avatar }} 
-          style={styles.avatar} 
-        />
+        <View style={styles.avatarContainer}>
+          <Image 
+            source={{ uri: item.avatar }} 
+            style={styles.avatar} 
+          />
+          {item.unreadCount > 0 && (
+            <View style={styles.unreadBadge}>
+              <Text style={styles.unreadText}>{item.unreadCount}</Text>
+            </View>
+          )}
+        </View>
         <View style={styles.chatContent}>
           <View style={styles.chatHeader}>
-            <Text style={styles.chatName}>{item.name}</Text>
-            {item.messageTime && (
-              <Text style={styles.chatTime}>
-                {new Date(item.messageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </Text>
-            )}
+            <Text style={styles.chatName} numberOfLines={1}>{item.name}</Text>
+            <Text style={styles.chatTime}>
+              {new Date(item.messageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </Text>
           </View>
           <View style={styles.chatFooter}>
             <Text 
               style={[styles.chatMessage, !item.isRead && styles.unreadMessage]} 
               numberOfLines={1}
             >
-              {item.email}
+              {item.lastMessage}
             </Text>
-            {!item.isRead && item.unReadFor === user.uid && (
-              <View style={styles.unreadBadge} />
+            {!item.isRead && (
+              <MaterialIcons name="done-all" size={16} color="#075E54" />
             )}
           </View>
         </View>
@@ -189,43 +203,92 @@ const Home = () => {
     );
   };
 
+  const renderSearchItem = ({ item }) => {
+    return (
+      <TouchableOpacity 
+        style={styles.chatItem}
+        onPress={() => {
+          navigation.navigate('Chat', { 
+            userId: item.uid, 
+            userName: item.name,
+            userAvatar: item.avatar,
+            chatId: `${user.uid}_${item.uid}`
+          });
+          setSearchQuery('');
+        }}
+      >
+        <Image 
+          source={{ uri: item.avatar }} 
+          style={styles.avatar} 
+        />
+        <View style={styles.chatContent}>
+          <Text style={styles.chatName} numberOfLines={1}>{item.name}</Text>
+          <Text style={styles.chatStatus} numberOfLines={1}>{item.status}</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   const dataToShow = searchQuery ? searchResults : chats;
+  const renderItem = searchQuery ? renderSearchItem : renderUserItem;
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Chats</Text>
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <Text style={styles.logoutText}>Logout</Text>
+        <Text style={styles.headerTitle}>Weblah</Text>
+        <View style={styles.headerIcons}>
+          <TouchableOpacity style={styles.headerIcon}>
+            <Ionicons name="camera-outline" size={24} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerIcon}>
+            <Ionicons name="search" size={20} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleLogout} style={styles.headerIcon}>
+            <MaterialIcons name="logout" size={20} color="white" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.tabBar}>
+        <TouchableOpacity style={styles.tabItem}>
+          <Ionicons name="people" size={24} color="#fff" />
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.tabItem, styles.activeTab]}>
+          <Ionicons name="chatbubbles" size={24} color="#fff" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.tabItem}>
+          <Ionicons name="call" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
 
       <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search by name or phone"
-          placeholderTextColor="#888"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          autoCorrect={false}
-          autoCapitalize="none"
-        />
-        {(searchQuery.length > 0 || searching) && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Ionicons name="close-circle" size={20} color="#888" />
-          </TouchableOpacity>
-        )}
+        <View style={styles.searchInner}>
+          <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search or start new chat"
+            placeholderTextColor="#888"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCorrect={false}
+            autoCapitalize="none"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={20} color="#888" />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
-      {searching ? (
+      {loading || searching ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color="#075E54" />
+          <ActivityIndicator size="large" color="#075E54" />
         </View>
       ) : (
         <FlatList
           data={dataToShow}
-          renderItem={renderUserItem}
+          renderItem={renderItem}
           keyExtractor={item => item?.uid || Math.random().toString()}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
@@ -237,6 +300,10 @@ const Home = () => {
           }
         />
       )}
+
+      <TouchableOpacity style={styles.newChatButton}>
+        <Ionicons name="chatbox-ellipses" size={24} color="white" />
+      </TouchableOpacity>
     </View>
   );
 };

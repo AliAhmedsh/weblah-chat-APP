@@ -81,6 +81,8 @@ const Chat = ({ route, navigation }) => {
               text: msg.text,
               image: msg.imageUrl,
               createdAt: new Date(msg.timestamp),
+              voiceMessage: msg?.voiceMessage || null,
+              duration: msg?.duration || null,
               user: {
                 _id: msg.senderUID,
                 name: msg.senderUID === senderUID ? 'You' : userName,
@@ -142,7 +144,6 @@ const Chat = ({ route, navigation }) => {
     }
   }
   const renderBubble = (props) => {
-    const isVoiceMessage = !!props.currentMessage.voiceMessage;
     return(
       <Bubble
       {...props}
@@ -316,7 +317,6 @@ const VoiceMessagePlayer = ({ uri, duration, isCurrentUser }) => {
         if (success) stopPlayback();
       });
       
-      // Update progress
       intervalRef.current = setInterval(async () => {
         try {
           const info = await SoundPlayer.getInfo();
@@ -359,7 +359,7 @@ const VoiceMessagePlayer = ({ uri, duration, isCurrentUser }) => {
         <Ionicons 
           name={isPlaying ? "pause" : "play"} 
           size={24} 
-          color={isCurrentUser ? "white" : "#075E54"} 
+          color={isCurrentUser ? "blue" : "#075E54"} 
         />
       </TouchableOpacity>
       
@@ -368,15 +368,15 @@ const VoiceMessagePlayer = ({ uri, duration, isCurrentUser }) => {
         value={position}
         minimumValue={0}
         maximumValue={durationSec || 1}
-        minimumTrackTintColor={isCurrentUser ? "white" : "#075E54"}
-        maximumTrackTintColor={isCurrentUser ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.2)"}
-        thumbTintColor={isCurrentUser ? "white" : "#075E54"}
+        minimumTrackTintColor={isCurrentUser ? "blue" : "#075E54"}
+        maximumTrackTintColor={isCurrentUser ? "blue" : "rgba(0,0,0,0.2)"}
+        thumbTintColor={isCurrentUser ? "blue" : "#075E54"}
         disabled={true}
       />
       
       <Text style={[
         voiceMessageStyles.duration,
-        { color: isCurrentUser ? "white" : "#075E54" }
+        { color: isCurrentUser ? "blue" : "#075E54" }
       ]}>
         {duration || formatTime(durationSec)}
       </Text>

@@ -1,4 +1,6 @@
-import { StyleSheet, Platform } from 'react-native';
+import { StyleSheet, Platform, Dimensions } from 'react-native';
+
+const { width, height } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
     container: {
@@ -9,34 +11,52 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 15,
+        paddingTop: Platform.OS === 'ios' ? 50 : 20,
+        paddingBottom: 15,
+        paddingHorizontal: 15,
         backgroundColor: '#075E54',
-        borderBottomWidth: 1,
-        borderBottomColor: '#ddd',
+        elevation: 4,
     },
     headerTitle: {
-        fontSize: 20,
+        fontSize: 22,
         fontWeight: 'bold',
         color: 'white',
     },
-    logoutButton: {
-        padding: 8,
-        backgroundColor: '#128C7E',
-        borderRadius: 5,
-    },
-    logoutText: {
-        color: 'white',
-        fontWeight: '500',
-    },
-    searchContainer: {
+    headerIcons: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f0f0f0',
-        borderRadius: 10,
-        marginHorizontal: 15,
-        marginVertical: 10,
-        paddingHorizontal: 15,
+    },
+    headerIcon: {
+        marginLeft: 20,
+    },
+    tabBar: {
+        flexDirection: 'row',
+        backgroundColor: '#075E54',
         paddingVertical: 8,
+    },
+    tabItem: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 8,
+        opacity: 0.6,
+    },
+    activeTab: {
+        opacity: 1,
+        borderBottomWidth: 2,
+        borderBottomColor: 'white',
+    },
+    searchContainer: {
+        padding: 10,
+        backgroundColor: '#075E54',
+    },
+    searchInner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'white',
+        borderRadius: 8,
+        paddingHorizontal: 15,
+        paddingVertical: Platform.OS === 'ios' ? 10 : 5,
     },
     searchIcon: {
         marginRight: 10,
@@ -51,16 +71,19 @@ const styles = StyleSheet.create({
     },
     chatItem: {
         flexDirection: 'row',
-        padding: 15,
-        borderBottomWidth: 1,
+        padding: 12,
+        borderBottomWidth: 0.5,
         borderBottomColor: '#f0f0f0',
         alignItems: 'center',
     },
-    avatar: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
+    avatarContainer: {
+        position: 'relative',
         marginRight: 15,
+    },
+    avatar: {
+        width: 55,
+        height: 55,
+        borderRadius: 30,
     },
     chatContent: {
         flex: 1,
@@ -71,8 +94,10 @@ const styles = StyleSheet.create({
         marginBottom: 5,
     },
     chatName: {
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: 'bold',
+        color: '#333',
+        maxWidth: width * 0.6,
     },
     chatTime: {
         fontSize: 12,
@@ -84,12 +109,25 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     chatMessage: {
-        fontSize: 14,
-        color: '#666',
+        fontSize: 15,
+        color: '#888',
         flex: 1,
         marginRight: 10,
+        maxWidth: width * 0.7,
+    },
+    chatStatus: {
+        fontSize: 14,
+        color: '#888',
+        marginTop: 2,
+    },
+    unreadMessage: {
+        color: '#333',
+        fontWeight: 'bold',
     },
     unreadBadge: {
+        position: 'absolute',
+        top: -5,
+        right: -5,
         backgroundColor: '#25D366',
         borderRadius: 10,
         width: 20,
@@ -102,6 +140,11 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: 'bold',
     },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     emptyContainer: {
         flex: 1,
         justifyContent: 'center',
@@ -111,6 +154,18 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: 16,
         color: '#888',
+    },
+    newChatButton: {
+        position: 'absolute',
+        bottom: 20,
+        right: 20,
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: '#075E54',
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 5,
     },
 });
 
