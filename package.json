@@ -35,6 +35,7 @@
     "react-native-screens": "^4.9.2",
     "react-native-sound-player": "^0.14.5",
     "react-native-vector-icons": "^10.2.0",
+    "react-native-webrtc": "^124.0.5",
     "react-query": "^3.39.3",
     "react-redux": "^9.2.0",
     "redux": "^5.0.1",
