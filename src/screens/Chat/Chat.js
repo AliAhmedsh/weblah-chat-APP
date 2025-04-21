@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
   StatusBar,
@@ -10,8 +10,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   Text,
+  Clipboard,
 } from 'react-native';
-import { GiftedChat, Bubble, Send, Time } from 'react-native-gifted-chat';
+import {GiftedChat, Bubble, Send, Time} from 'react-native-gifted-chat';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import database from '@react-native-firebase/database';
 import auth from '@react-native-firebase/auth';
@@ -21,31 +22,42 @@ import storage from '@react-native-firebase/storage';
 import ChatHeader from './ChatHeader';
 import SoundPlayer from 'react-native-sound-player';
 import Slider from '@react-native-community/slider';
+import Lightbox from 'react-native-lightbox-v2';
 
-const Chat = ({ route, navigation }) => {
-  const { userId, userName, userAvatar } = route.params;
+const Chat = ({route, navigation}) => {
+  const {userId, userName, userAvatar} = route.params;
   const currentUser = auth().currentUser;
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const textInputRef = useRef(null);
+
   const senderUID = currentUser.uid;
   const receiverUID = userId;
   const senderChatRef = database().ref(`chatRooms/${senderUID}_${receiverUID}`);
-  const receiverChatRef = database().ref(`chatRooms/${receiverUID}_${senderUID}`);
-  const handleImageSelect = async (imagePath) => {
+  const receiverChatRef = database().ref(
+    `chatRooms/${receiverUID}_${senderUID}`,
+  );
+
+  const handleImageSelect = async imagePath => {
     try {
       await uploadImage(imagePath);
     } catch (error) {
-      console.error("Error in handleImageSelect:", error);
+      console.error('Error in handleImageSelect:', error);
     }
   };
-  const uploadImage = async (imagePath) => {
+
+  const uploadImage = async imagePath => {
     try {
       const timestamp = Date.now();
       const fileName = `image_${timestamp}.jpg`;
-      const reference = storage().ref(`chat_images/${senderUID}_${receiverUID}/${fileName}`);
+      const reference = storage().ref(
+        `chat_images/${senderUID}_${receiverUID}/${fileName}`,
+      );
       const task = reference.putFile(imagePath);
-      task.on('state_changed', (taskSnapshot) => {
-        console.log(`${taskSnapshot.bytesTransferred} transferred out of ${taskSnapshot.totalBytes}`);
+      task.on('state_changed', taskSnapshot => {
+        console.log(
+          `${taskSnapshot.bytesTransferred} transferred out of ${taskSnapshot.totalBytes}`,
+        );
       });
       await task;
       const downloadUrl = await reference.getDownloadURL();
@@ -54,7 +66,7 @@ const Chat = ({ route, navigation }) => {
       console.error('Error uploading image:', error);
     }
   };
-  const sendImageMessage = async (imageUrl) => {
+  const sendImageMessage = async imageUrl => {
     const messageKey = senderChatRef.push().key;
     const timestamp = Date.now();
 
@@ -70,11 +82,11 @@ const Chat = ({ route, navigation }) => {
   };
 
   useEffect(() => {
-    const handleSnapshot = (snapshot) => {
+    const handleSnapshot = snapshot => {
       const data = snapshot.val();
       if (data) {
         const receivedMessages = Object.keys(data)
-          .map((key) => {
+          .map(key => {
             const msg = data[key];
             return {
               _id: key,
@@ -86,12 +98,12 @@ const Chat = ({ route, navigation }) => {
               user: {
                 _id: msg.senderUID,
                 name: msg.senderUID === senderUID ? 'You' : userName,
-                avatar: userAvatar
+                avatar: userAvatar,
               },
               ...(msg?.imageUrl && {
                 image: msg.imageUrl,
-                text: msg.text || '📷 Photo'
-              })
+                text: msg.text || '📷 Photo',
+              }),
             };
           })
           .sort((a, b) => b.createdAt - a.createdAt);
@@ -101,7 +113,9 @@ const Chat = ({ route, navigation }) => {
     };
 
     const checkChatPath = async () => {
-      const snapshot1 = await database().ref(`chatRooms/${senderUID}_${receiverUID}`).once('value');
+      const snapshot1 = await database()
+        .ref(`chatRooms/${senderUID}_${receiverUID}`)
+        .once('value');
 
       if (snapshot1.exists()) {
         senderChatRef.on('value', handleSnapshot);
@@ -114,11 +128,13 @@ const Chat = ({ route, navigation }) => {
 
     return () => {
       senderChatRef.off('value', handleSnapshot);
-      database().ref(`chatRooms/${senderUID}_${receiverUID}`).off('value', handleSnapshot);
+      database()
+        .ref(`chatRooms/${senderUID}_${receiverUID}`)
+        .off('value', handleSnapshot);
     };
   }, [senderUID, receiverUID, userName, userAvatar]);
 
-  const sendMessageToDatabase = async (newMessages) => {
+  const sendMessageToDatabase = async newMessages => {
     const message = newMessages[0];
     const msgData = {
       text: message.text,
@@ -133,89 +149,111 @@ const Chat = ({ route, navigation }) => {
     const messageKey = senderChatRef.push().key;
     await senderChatRef.child(messageKey).set(msgData);
     await receiverChatRef.child(messageKey).set(msgData);
-  }
+  };
+
   const onSend = (newMessages = []) => {
     if (newMessages.length > 0) {
-      const message = newMessages[0]
-      sendMessageToDatabase(newMessages)
-      setMessages((previousMessages) => GiftedChat.append(previousMessages, message))
+      const message = newMessages[0];
+      sendMessageToDatabase(newMessages);
+      setMessages(previousMessages =>
+        GiftedChat.append(previousMessages, message),
+      );
     } else {
-      console.error('Invalid message data')
+      console.error('Invalid message data');
     }
-  }
-  const renderBubble = (props) => {
-    return(
+  };
+  const renderBubble = props => {
+    return (
       <Bubble
-      {...props}
-      wrapperStyle={{
-        right: {
-          backgroundColor: '#DCF8C6',
-          marginBottom: 8,
-          marginRight: 8,
-          borderRadius: 8,
-          borderTopRightRadius: props.position === 'right' ? 0 : 8,
-        },
-        left: {
-          backgroundColor: 'white',
-          marginBottom: 8,
-          marginLeft: 8,
-          borderRadius: 8,
-          borderTopLeftRadius: props.position === 'left' ? 0 : 8,
-        },
-      }}
-      textStyle={{
-        right: {
-          color: 'black',
-          fontSize: 16,
-        },
-        left: {
-          color: 'black',
-          fontSize: 16,
-        },
-      }}
-      timeTextStyle={{
-        right: {
-          color: '#667781',
-          fontSize: 12,
-        },
-        left: {
-          color: '#667781',
-          fontSize: 12,
-        },
-      }}
-      renderMessageImage={(props) => {
-        const imageUri = props.currentMessage.image || props.currentMessage.imageUrl;
-        return (
-          <Image
-            source={{ uri: imageUri }}
-            style={{
-              width: 200,
-              height: 200,
-              borderRadius: 8,
-              backgroundColor: '#f0f0f0'
-            }}
-            resizeMode="cover"
-            onError={(e) => console.log('Image loading error:', e.nativeEvent.error)}
-          />
-        );
-      }}
-      renderCustomView={(props) => {
-        if (props.currentMessage.voiceMessage) {
+        {...props}
+        wrapperStyle={{
+          right: {
+            backgroundColor: '#DCF8C6',
+            marginBottom: 8,
+            marginRight: 8,
+            borderRadius: 8,
+            borderTopRightRadius: props.position === 'right' ? 0 : 8,
+          },
+          left: {
+            backgroundColor: 'white',
+            marginBottom: 8,
+            marginLeft: 8,
+            borderRadius: 8,
+            borderTopLeftRadius: props.position === 'left' ? 0 : 8,
+          },
+        }}
+        textStyle={{
+          right: {
+            color: 'black',
+            fontSize: 16,
+          },
+          left: {
+            color: 'black',
+            fontSize: 16,
+          },
+        }}
+        timeTextStyle={{
+          right: {
+            color: '#667781',
+            fontSize: 12,
+          },
+          left: {
+            color: '#667781',
+            fontSize: 12,
+          },
+        }}
+        renderMessageImage={props => {
+          const imageUri =
+            props.currentMessage.image || props.currentMessage.imageUrl;
           return (
-            <VoiceMessagePlayer 
-              uri={props.currentMessage.voiceMessage}
-              duration={props.currentMessage.duration}
-              isCurrentUser={props.currentMessage.user._id === senderUID}
-            />
+            <Lightbox
+              renderHeader={close => (
+                <View
+                  style={{
+                    position: 'absolute',
+                    zIndex: 10000,
+                    top: Platform.OS === 'ios' ? insets.top : 20,
+                    left: 0,
+                  }}>
+                  <TouchableOpacity onPress={close} style={styles.headerIcon}>
+                    <Ionicons name="close" size={24} color="white" />
+                  </TouchableOpacity>
+                </View>
+              )}
+              springConfig={{overshootClamping: true}}>
+              <Image
+                source={{uri: imageUri}}
+                style={{
+                  width: 200,
+                  height: 200,
+                  borderRadius: 8,
+                  backgroundColor: '#f0f0f0',
+                }}
+                resizeMode="cover"
+                onError={e =>
+                  console.log('Image loading error:', e.nativeEvent.error)
+                }
+              />
+            </Lightbox>
           );
-        }
-        return null;
-      }}
-    />
-    )
-  }
+        }}
+        renderCustomView={props => {
+          if (props.currentMessage.voiceMessage) {
+            return (
+              <VoiceMessagePlayer
+                uri={props.currentMessage.voiceMessage}
+                duration={props.currentMessage.duration}
+                isCurrentUser={props.currentMessage.user._id === senderUID}
+              />
+            );
+          }
+          return null;
+        }}
+      />
+    );
+  };
 
-  const renderTime = (props) => (
+  const renderTime = props => (
     <Time
       {...props}
       timeTextStyle={{
@@ -231,21 +269,21 @@ const Chat = ({ route, navigation }) => {
     />
   );
 
-  const renderSend = (props) => (
+  const renderInputToolbar = props => (
+    <InputField
+      {...props}
+      onImageSelect={handleImageSelect}
+      onCameraPress={handleImageSelect}
+    />
+  );
+
+  const renderSend = props => (
     <Send {...props} containerStyle={styles.sendContainer}>
       <View style={styles.sendButton}>
         <Ionicons name="send" size={20} color="white" />
       </View>
     </Send>
   );
-
-  const renderInputToolbar = (props) => (
-    <InputField
-      {...props}
-      onImageSelect={handleImageSelect}
-      onCameraPress={handleImageSelect}
-    />
-  )
 
   if (loading) {
     return (
@@ -255,6 +293,55 @@ const Chat = ({ route, navigation }) => {
     );
   }
 
+  // const onLongPress = (context, message) => {
+  //   console.log('asdasd');
+  //   // console.log(context, message);
+
+  //   return;
+
+  //   const options = ['Copy Text', 'Cancel'];
+  //   const cancelButtonIndex = options.length - 1;
+
+  //   context.actionSheet().showActionSheetWithOptions(
+  //     {
+  //       options,
+  //       cancelButtonIndex,
+  //     },
+  //     buttonIndex => {
+  //       if (buttonIndex === 0) {
+  //         Clipboard.setString(message.text);
+  //       }
+  //     },
+  //   );
+  // };
+
+  return (
+    <GiftedChat
+      messages={messages}
+      onSend={onSend}
+      user={{_id: senderUID}}
+      renderBubble={renderBubble}
+      renderTime={renderTime}
+      renderSend={renderSend}
+      renderInputToolbar={renderInputToolbar}
+      alwaysShowSend
+      scrollToBottom
+      scrollToBottomComponent={() => (
+        <View style={styles.scrollToBottom}>
+          <Ionicons name="chevron-down-circle" size={24} color="#075E54" />
+        </View>
+      )}
+      textInputStyle={styles.textInput}
+      placeholder="Type a message..."
+      placeholderTextColor="#999"
+      renderAvatarOnTop
+      minInputToolbarHeight={60}
+      listViewProps={{
+        style: styles.chatList,
+      }}
+      // onLongPress={onLongPress}
+    />
+  );
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar backgroundColor="#075E54" barStyle="light-content" />
@@ -268,7 +355,7 @@ const Chat = ({ route, navigation }) => {
         <GiftedChat
           messages={messages}
           onSend={onSend}
-          user={{ _id: senderUID }}
+          user={{_id: senderUID}}
           renderBubble={renderBubble}
           renderTime={renderTime}
           renderSend={renderSend}
@@ -289,13 +376,20 @@ const Chat = ({ route, navigation }) => {
             style: styles.chatList,
           }}
           keyboardShouldPersistTaps="never"
+          // onLongPress={onLongPress}
         />
-        {Platform.OS === 'android' && <KeyboardAvoidingView behavior="padding" />}
+        {Platform.OS === 'android' && (
+          <KeyboardAvoidingView
+            keyboardShouldPersistTaps="handled"
+            behavior="padding"
+          />
+        )}
       </View>
     </SafeAreaView>
   );
 };
-const VoiceMessagePlayer = ({ uri, duration, isCurrentUser }) => {
+
+const VoiceMessagePlayer = ({uri, duration, isCurrentUser}) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [position, setPosition] = useState(0);
   const [durationSec, setDurationSec] = useState(0);
@@ -312,11 +406,11 @@ const VoiceMessagePlayer = ({ uri, duration, isCurrentUser }) => {
     try {
       SoundPlayer.playUrl(uri);
       setIsPlaying(true);
-      
-      SoundPlayer.onFinishedPlaying((success) => {
+
+      SoundPlayer.onFinishedPlaying(success => {
         if (success) stopPlayback();
       });
-      
+
       intervalRef.current = setInterval(async () => {
         try {
           const info = await SoundPlayer.getInfo();
@@ -326,7 +420,6 @@ const VoiceMessagePlayer = ({ uri, duration, isCurrentUser }) => {
           clearInterval(intervalRef.current);
         }
       }, 500);
-      
     } catch (error) {
       console.log('Playback error:', error);
       setIsPlaying(false);
@@ -344,7 +437,7 @@ const VoiceMessagePlayer = ({ uri, duration, isCurrentUser }) => {
     }
   };
 
-  const formatTime = (seconds) => {
+  const formatTime = seconds => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
@@ -354,30 +447,30 @@ const VoiceMessagePlayer = ({ uri, duration, isCurrentUser }) => {
     <View style={voiceMessageStyles.container}>
       <TouchableOpacity
         onPress={isPlaying ? stopPlayback : startPlayback}
-        style={voiceMessageStyles.playButton}
-      >
-        <Ionicons 
-          name={isPlaying ? "pause" : "play"} 
-          size={24} 
-          color={isCurrentUser ? "blue" : "#075E54"} 
+        style={voiceMessageStyles.playButton}>
+        <Ionicons
+          name={isPlaying ? 'pause' : 'play'}
+          size={24}
+          color={isCurrentUser ? 'blue' : '#075E54'}
         />
       </TouchableOpacity>
-      
+
       <Slider
         style={voiceMessageStyles.slider}
         value={position}
         minimumValue={0}
         maximumValue={durationSec || 1}
-        minimumTrackTintColor={isCurrentUser ? "blue" : "#075E54"}
-        maximumTrackTintColor={isCurrentUser ? "blue" : "rgba(0,0,0,0.2)"}
-        thumbTintColor={isCurrentUser ? "blue" : "#075E54"}
+        minimumTrackTintColor={isCurrentUser ? 'blue' : '#075E54'}
+        maximumTrackTintColor={isCurrentUser ? 'blue' : 'rgba(0,0,0,0.2)'}
+        thumbTintColor={isCurrentUser ? 'blue' : '#075E54'}
         disabled={true}
       />
-      
-      <Text style={[
-        voiceMessageStyles.duration,
-        { color: isCurrentUser ? "blue" : "#075E54" }
-      ]}>
+
+      <Text
+        style={[
+          voiceMessageStyles.duration,
+          {color: isCurrentUser ? 'blue' : '#075E54'},
+        ]}>
         {duration || formatTime(durationSec)}
       </Text>
     </View>

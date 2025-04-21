@@ -1,46 +1,50 @@
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  KeyboardAvoidingView, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  ScrollView,
   Alert,
   Image,
-  Platform
+  Platform,
 } from 'react-native';
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import styles from './Style';
-import { useDispatch } from 'react-redux';
-import { dispatchUser } from '../../redux/slices/userSlice';
+import {useDispatch} from 'react-redux';
+import {dispatchUser} from '../../redux/slices/userSlice';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import storage from '@react-native-firebase/storage';
 import ImagePicker from 'react-native-image-crop-picker';
+import {CountryPicker} from 'react-native-country-codes-picker';
 
-const SignUp = ({ navigation }) => {
+const SignUp = ({navigation}) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     password: '',
     confirmPassword: '',
-    avatar: null
+    avatar: null,
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const dispatch = useDispatch();
 
+  const [show, setShow] = useState(false);
+  const [countryCode, setCountryCode] = useState('');
+
   const handleChange = (name, value) => {
     setFormData({
       ...formData,
-      [name]: value
+      [name]: value,
     });
     if (errors[name]) {
       setErrors({
         ...errors,
-        [name]: null
+        [name]: null,
       });
     }
   };
@@ -60,8 +64,8 @@ const SignUp = ({ navigation }) => {
         avatar: {
           uri: image.path,
           name: `avatar_${Date.now()}.jpg`,
-          type: image.mime
-        }
+          type: image.mime,
+        },
       });
     } catch (error) {
       if (error.code !== 'E_PICKER_CANCELLED') {
@@ -70,14 +74,15 @@ const SignUp = ({ navigation }) => {
     }
   };
 
-  const uploadImage = async (uid) => {
+  const uploadImage = async uid => {
     if (!formData.avatar) return null;
 
     const reference = storage().ref(`users/${uid}/avatar.jpg`);
     const task = reference.putFile(formData.avatar.uri);
 
-    task.on('state_changed', (taskSnapshot) => {
-      const progress = (taskSnapshot.bytesTransferred / taskSnapshot.totalBytes) * 100;
+    task.on('state_changed', taskSnapshot => {
+      const progress =
+        (taskSnapshot.bytesTransferred / taskSnapshot.totalBytes) * 100;
       setUploadProgress(progress);
     });
 
@@ -131,18 +136,18 @@ const SignUp = ({ navigation }) => {
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
-    
+
     setIsLoading(true);
-    
+
     try {
       // Create user in Firebase Auth
       const userCredential = await auth().createUserWithEmailAndPassword(
-        formData.email, 
-        formData.password
+        formData.email,
+        formData.password,
       );
-      
-      const { uid, email } = userCredential.user;
-      
+
+      const {uid, email} = userCredential.user;
+
       // Upload image if selected
       let avatarUrl = null;
       if (formData.avatar) {
@@ -154,22 +159,18 @@ const SignUp = ({ navigation }) => {
         uid,
         name: formData.name,
         email,
-        phone: formData.phone,
+        phone: `${countryCode}${formData.phone}`,
         avatar: avatarUrl,
         createdAt: firestore.FieldValue.serverTimestamp(),
-        updatedAt: firestore.FieldValue.serverTimestamp()
+        updatedAt: firestore.FieldValue.serverTimestamp(),
       };
-      
-      await firestore()
-        .collection('users')
-        .doc(uid)
-        .set(userData);
-      
+
+      await firestore().collection('users').doc(uid).set(userData);
+
       dispatch(dispatchUser(userData));
-      
     } catch (error) {
       setIsLoading(false);
-      
+
       if (error.code === 'auth/email-already-in-use') {
         Alert.alert('Email already in use.');
       } else if (error.code === 'auth/invalid-email') {
@@ -182,18 +183,20 @@ const SignUp = ({ navigation }) => {
   };
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
+      style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Text style={styles.title}>Create Account</Text>
-        
+
         {/* Avatar Upload Section */}
         <View style={styles.avatarContainer}>
           <TouchableOpacity onPress={selectImage} style={styles.avatarButton}>
             {formData.avatar ? (
-              <Image source={{ uri: formData.avatar.uri }} style={styles.avatarImage} />
+              <Image
+                source={{uri: formData.avatar.uri}}
+                style={styles.avatarImage}
+              />
             ) : (
               <View style={styles.avatarPlaceholder}>
                 <Text style={styles.avatarPlaceholderText}>Add Photo</Text>
@@ -208,7 +211,7 @@ const SignUp = ({ navigation }) => {
             style={[styles.input, errors.name && styles.errorInput]}
             placeholder="John Doe"
             value={formData.name}
-            onChangeText={(text) => handleChange('name', text)}
+            onChangeText={text => handleChange('name', text)}
           />
           {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
         </View>
@@ -221,18 +224,53 @@ const SignUp = ({ navigation }) => {
             keyboardType="email-address"
             autoCapitalize="none"
             value={formData.email}
-            onChangeText={(text) => handleChange('email', text)}
+            onChangeText={text => handleChange('email', text)}
           />
           {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
         </View>
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Phone Number</Text>
-          <TextInput
-            style={[styles.input, errors.phone && styles.errorInput]}
-            placeholder="+1 234 567 8900"
-            keyboardType="phone-pad"
-            value={formData.phone}
-            onChangeText={(text) => handleChange('phone', text)}
+          <View style={{flexDirection: 'row', alignItems: 'center'}}>
+            <TouchableOpacity
+              onPress={() => setShow(true)}
+              style={{
+                height: 47,
+                padding: 10,
+              }}>
+              <Text
+                style={{
+                  color: 'black',
+                  fontSize: 16,
+                }}>
+                {countryCode}
+              </Text>
+            </TouchableOpacity>
+            <TextInput
+              style={[
+                styles.input,
+                errors.phone && styles.errorInput,
+                {flex: 1, borderRadius: 0},
+              ]}
+              keyboardType="phone-pad"
+              value={formData.phone}
+              onChangeText={text => handleChange('phone', text)}
+            />
+          </View>
+
+          <CountryPicker
+            show={show}
+            pickerButtonOnPress={item => {
+              setCountryCode(item.dial_code);
+              setShow(false);
+            }}
+            style={{
+              modal: {
+                height: 500,
+              },
+            }}
+            onBackdropPress={() => {
+              setShow(false);
+            }}
           />
           {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
         </View>
@@ -243,9 +281,11 @@ const SignUp = ({ navigation }) => {
             placeholder="At least 6 characters"
             secureTextEntry
             value={formData.password}
-            onChangeText={(text) => handleChange('password', text)}
+            onChangeText={text => handleChange('password', text)}
           />
-          {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+          {errors.password && (
+            <Text style={styles.errorText}>{errors.password}</Text>
+          )}
         </View>
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Confirm Password</Text>
@@ -254,9 +294,11 @@ const SignUp = ({ navigation }) => {
             placeholder="Confirm your password"
             secureTextEntry
             value={formData.confirmPassword}
-            onChangeText={(text) => handleChange('confirmPassword', text)}
+            onChangeText={text => handleChange('confirmPassword', text)}
           />
-          {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
+          {errors.confirmPassword && (
+            <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+          )}
         </View>
 
         {isLoading && uploadProgress > 0 && (
@@ -265,11 +307,10 @@ const SignUp = ({ navigation }) => {
           </View>
         )}
 
-        <TouchableOpacity 
-          style={[styles.button, isLoading && styles.disabledButton]} 
-          onPress={handleSubmit} 
-          disabled={isLoading}
-        >
+        <TouchableOpacity
+          style={[styles.button, isLoading && styles.disabledButton]}
+          onPress={handleSubmit}
+          disabled={isLoading}>
           <Text style={styles.buttonText}>
             {isLoading ? 'Creating Account...' : 'Sign Up'}
           </Text>

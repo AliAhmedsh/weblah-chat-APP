@@ -1,8 +1,17 @@
-import { View, Text, TouchableOpacity, FlatList, Image, TextInput, ActivityIndicator } from 'react-native';
-import React, { useState, useEffect } from 'react';
-import { clearState } from '../../redux/slices/userSlice';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigation } from '@react-navigation/native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  FlatList,
+  Image,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import React, {useState, useEffect} from 'react';
+import {clearState} from '../../redux/slices/userSlice';
+import {useDispatch, useSelector} from 'react-redux';
+import {useNavigation} from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import firestore from '@react-native-firebase/firestore';
@@ -17,15 +26,15 @@ const Home = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
-  const { user } = useSelector((state) => state?.userReducer);
-  
-  const processRealtimeData = async (snapshot) => {
+  const {user} = useSelector(state => state?.userReducer);
+
+  const processRealtimeData = async snapshot => {
     if (snapshot.exists()) {
       const chatRooms = snapshot.val();
       const processedKeys = new Set();
 
       const userChats = await Promise.all(
-        Object.keys(chatRooms).map(async (key) => {
+        Object.keys(chatRooms).map(async key => {
           const [uid1, uid2] = key.split('_');
           const relevantUid = uid1 === user.uid ? uid2 : uid1;
 
@@ -33,55 +42,67 @@ const Home = () => {
             if (processedKeys.has(relevantUid)) return null;
 
             const messages = chatRooms[key];
-            const messageArray = Object.values(messages).filter((message) => {
+            const messageArray = Object.values(messages).filter(message => {
               return message.text && message.timestamp && message.senderUID;
             });
-            
+
             if (messageArray.length === 0) return null;
-            
+
             messageArray.sort((a, b) => b.timestamp - a.timestamp);
             processedKeys.add(relevantUid);
 
             const latestMessage = messageArray[0];
             let lastMessage = latestMessage?.text || 'Media message';
-            
+
             // Format message preview
             if (latestMessage?.imageUrl) {
               lastMessage = '📷 Photo';
             } else if (latestMessage?.voiceMessage) {
               lastMessage = '🎤 Voice message';
             }
-            
+
             const messageTime = latestMessage?.timestamp || Date.now();
-            const isReadStatus = latestMessage?.senderUID === user?.uid ? 
-              true : (latestMessage?.isRead || false);
+            const isReadStatus =
+              latestMessage?.senderUID === user?.uid
+                ? true
+                : latestMessage?.isRead || false;
 
             // Get user data
             const userDocSnapshot = await firestore()
               .collection('users')
               .doc(relevantUid)
               .get();
-              
-            const userData = userDocSnapshot.exists ? userDocSnapshot.data() : {};
-            const userName = userData.firstName || userData.name || userData.nickName || 'User';
-            const userStatus = userData.status || 'Hey there! I am using WhatsApp';
-            
+
+            const userData = userDocSnapshot.exists
+              ? userDocSnapshot.data()
+              : {};
+            const userName =
+              userData.firstName ||
+              userData.name ||
+              userData.nickName ||
+              'User';
+            const userStatus =
+              userData.status || 'Hey there! I am using WhatsApp';
+
             return {
               id: key,
               uid: relevantUid,
               name: userName,
               lastMessage: lastMessage,
               status: userStatus,
-              avatar: userData?.avatarImage || userData?.avatar || 'https://i.pravatar.cc/150?img=3',
+              avatar:
+                userData?.avatarImage ||
+                userData?.avatar ||
+                'https://i.pravatar.cc/150?img=3',
               isRead: isReadStatus,
               messageTime,
               unreadCount: isReadStatus ? 0 : 1,
             };
           }
           return null;
-        })
+        }),
       );
-      
+
       const filteredChats = userChats.filter(chat => chat !== null);
       filteredChats.sort((a, b) => (b.messageTime || 0) - (a.messageTime || 0));
       setChats(filteredChats);
@@ -91,7 +112,7 @@ const Home = () => {
     setLoading(false);
   };
 
-  const searchAllUsers = async (query) => {
+  const searchAllUsers = async query => {
     if (!query) {
       setSearchResults([]);
       setSearching(false);
@@ -112,17 +133,22 @@ const Home = () => {
         const userData = doc.data();
         if (
           (userData.phone && userData.phone.includes(query)) ||
-          (userData.firstName && userData.firstName.toLowerCase().includes(queryLower)) ||
+          (userData.firstName &&
+            userData.firstName.toLowerCase().includes(queryLower)) ||
           (userData.name && userData.name.toLowerCase().includes(queryLower)) ||
-          (userData.nickName && userData.nickName.toLowerCase().includes(queryLower)) )
-        {
+          (userData.nickName &&
+            userData.nickName.toLowerCase().includes(queryLower))
+        ) {
           results.push({
             id: doc.id,
             uid: userData.uid,
             name: userData.firstName || userData.name || 'User',
             status: userData.status || 'Hey there! I am using WhatsApp',
-            avatar: userData?.avatarImage || userData?.avatar || 'https://i.pravatar.cc/150?img=3',
-            isNew: true
+            avatar:
+              userData?.avatarImage ||
+              userData?.avatar ||
+              'https://i.pravatar.cc/150?img=3',
+            isNew: true,
           });
         }
       });
@@ -152,46 +178,73 @@ const Home = () => {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  // const handleLogout = () => {
+  //   Alert.alert('Weblah', 'Are you sure ?');
+  //   return;
+  //   dispatch(clearState());
+  // };
+
   const handleLogout = () => {
-    dispatch(clearState());
+    Alert.alert(
+      'Weblah',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          onPress: () => {
+            dispatch(clearState());
+            // Optionally navigate to login screen or splash screen
+            navigation.replace('Login'); // or navigation.navigate
+          },
+          style: 'destructive',
+        },
+      ],
+      {cancelable: true},
+    );
   };
 
-  const renderUserItem = ({ item }) => {
+  const renderUserItem = ({item}) => {
     if (!item || !item.uid) return null;
-    
+
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[styles.chatItem, !item.isRead && styles.unreadItem]}
-        onPress={() => navigation.navigate('Chat', { 
-          userId: item.uid, 
-          userName: item.name,
-          userAvatar: item.avatar,
-          chatId: item.id || `${user.uid}_${item.uid}`
-        })}
-      >
+        onPress={() =>
+          navigation.navigate('Chat', {
+            userId: item.uid,
+            userName: item.name,
+            userAvatar: item.avatar,
+            chatId: item.id || `${user.uid}_${item.uid}`,
+          })
+        }>
         <View style={styles.avatarContainer}>
-          <Image 
-            source={{ uri: item.avatar }} 
-            style={styles.avatar} 
-          />
-          {item.unreadCount > 0 && (
+          <Image source={{uri: item.avatar}} style={styles.avatar} />
+          {/* {item.unreadCount > 0 && (
             <View style={styles.unreadBadge}>
               <Text style={styles.unreadText}>{item.unreadCount}</Text>
             </View>
-          )}
+          )} */}
         </View>
         <View style={styles.chatContent}>
           <View style={styles.chatHeader}>
-            <Text style={styles.chatName} numberOfLines={1}>{item.name}</Text>
+            <Text style={styles.chatName} numberOfLines={1}>
+              {item.name}
+            </Text>
             <Text style={styles.chatTime}>
-              {new Date(item.messageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              {new Date(item.messageTime).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
             </Text>
           </View>
           <View style={styles.chatFooter}>
-            <Text 
-              style={[styles.chatMessage, !item.isRead && styles.unreadMessage]} 
-              numberOfLines={1}
-            >
+            <Text
+              style={[styles.chatMessage, !item.isRead && styles.unreadMessage]}
+              numberOfLines={1}>
               {item.lastMessage}
             </Text>
             {!item.isRead && (
@@ -203,27 +256,27 @@ const Home = () => {
     );
   };
 
-  const renderSearchItem = ({ item }) => {
+  const renderSearchItem = ({item}) => {
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.chatItem}
         onPress={() => {
-          navigation.navigate('Chat', { 
-            userId: item.uid, 
+          navigation.navigate('Chat', {
+            userId: item.uid,
             userName: item.name,
             userAvatar: item.avatar,
-            chatId: `${user.uid}_${item.uid}`
+            chatId: `${user.uid}_${item.uid}`,
           });
           setSearchQuery('');
-        }}
-      >
-        <Image 
-          source={{ uri: item.avatar }} 
-          style={styles.avatar} 
-        />
+        }}>
+        <Image source={{uri: item.avatar}} style={styles.avatar} />
         <View style={styles.chatContent}>
-          <Text style={styles.chatName} numberOfLines={1}>{item.name}</Text>
-          <Text style={styles.chatStatus} numberOfLines={1}>{item.status}</Text>
+          <Text style={styles.chatName} numberOfLines={1}>
+            {item.name}
+          </Text>
+          <Text style={styles.chatStatus} numberOfLines={1}>
+            {item.status}
+          </Text>
         </View>
       </TouchableOpacity>
     );
@@ -237,12 +290,12 @@ const Home = () => {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Weblah</Text>
         <View style={styles.headerIcons}>
-          <TouchableOpacity style={styles.headerIcon}>
+          {/* <TouchableOpacity style={styles.headerIcon}>
             <Ionicons name="camera-outline" size={24} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerIcon}>
+          </TouchableOpacity> */}
+          {/* <TouchableOpacity style={styles.headerIcon}>
             <Ionicons name="search" size={20} color="white" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
           <TouchableOpacity onPress={handleLogout} style={styles.headerIcon}>
             <MaterialIcons name="logout" size={20} color="white" />
           </TouchableOpacity>
@@ -263,7 +316,12 @@ const Home = () => {
 
       <View style={styles.searchContainer}>
         <View style={styles.searchInner}>
-          <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
+          <Ionicons
+            name="search"
+            size={20}
+            color="#888"
+            style={styles.searchIcon}
+          />
           <TextInput
             style={styles.searchInput}
             placeholder="Search or start new chat"
@@ -294,7 +352,9 @@ const Home = () => {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>
-                {searchQuery ? 'No matching results found' : 'No chats available'}
+                {searchQuery
+                  ? 'No matching results found'
+                  : 'No chats available'}
               </Text>
             </View>
           }

@@ -35,7 +35,8 @@ export const createDummyUsers = async () => {
     },
   ];
 
-  const avatarUrl = 'https://firebasestorage.googleapis.com/v0/b/gram-4a58a.appspot.com/o/users%2FzXA6p8v0KkTGBa0qjo9lsWFiA5l1%2Favatar.jpg?alt=media&token=1a4d0e8d-17e0-43b7-9749-ea468bd20812';
+  const avatarUrl =
+    'https://firebasestorage.googleapis.com/v0/b/gram-4a58a.appspot.com/o/users%2FzXA6p8v0KkTGBa0qjo9lsWFiA5l1%2Favatar.jpg?alt=media&token=1a4d0e8d-17e0-43b7-9749-ea468bd20812';
 
   try {
     for (const userData of dummyUsers) {
@@ -43,24 +44,21 @@ export const createDummyUsers = async () => {
         // Create auth user
         const userCredential = await auth().createUserWithEmailAndPassword(
           userData.email,
-          userData.password
+          userData.password,
         );
 
-        const { uid, email } = userCredential.user;
+        const {uid, email} = userCredential.user;
 
         // Create user document in Firestore
-        await firestore()
-          .collection('users')
-          .doc(uid)
-          .set({
-            uid,
-            name: userData.name,
-            email,
-            phone: userData.phone,
-            avatar: avatarUrl,
-            createdAt: firestore.FieldValue.serverTimestamp(),
-            updatedAt: firestore.FieldValue.serverTimestamp()
-          });
+        await firestore().collection('users').doc(uid).set({
+          uid,
+          name: userData.name,
+          email,
+          phone: userData.phone,
+          avatar: avatarUrl,
+          createdAt: firestore.FieldValue.serverTimestamp(),
+          updatedAt: firestore.FieldValue.serverTimestamp(),
+        });
 
         console.log(`Created user: ${userData.name}`);
       } catch (error) {
