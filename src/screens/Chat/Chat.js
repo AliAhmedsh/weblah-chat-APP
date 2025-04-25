@@ -316,33 +316,6 @@ const Chat = ({route, navigation}) => {
   // };
 
   return (
-    <GiftedChat
-      messages={messages}
-      onSend={onSend}
-      user={{_id: senderUID}}
-      renderBubble={renderBubble}
-      renderTime={renderTime}
-      renderSend={renderSend}
-      renderInputToolbar={renderInputToolbar}
-      alwaysShowSend
-      scrollToBottom
-      scrollToBottomComponent={() => (
-        <View style={styles.scrollToBottom}>
-          <Ionicons name="chevron-down-circle" size={24} color="#075E54" />
-        </View>
-      )}
-      textInputStyle={styles.textInput}
-      placeholder="Type a message..."
-      placeholderTextColor="#999"
-      renderAvatarOnTop
-      minInputToolbarHeight={60}
-      listViewProps={{
-        style: styles.chatList,
-      }}
-      // onLongPress={onLongPress}
-    />
-  );
-  return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar backgroundColor="#075E54" barStyle="light-content" />
       <View style={styles.container}>

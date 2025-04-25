@@ -293,11 +293,16 @@ const Home = () => {
           {/* <TouchableOpacity style={styles.headerIcon}>
             <Ionicons name="camera-outline" size={24} color="white" />
           </TouchableOpacity> */}
-          {/* <TouchableOpacity style={styles.headerIcon}>
-            <Ionicons name="search" size={20} color="white" />
-          </TouchableOpacity> */}
+
           <TouchableOpacity onPress={handleLogout} style={styles.headerIcon}>
             <MaterialIcons name="logout" size={20} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate('SettingsScreen');
+            }}
+            style={styles.headerIcon}>
+            <Ionicons name="cog" size={23} color="white" />
           </TouchableOpacity>
         </View>
       </View>
