@@ -84,35 +84,7 @@ export default function AccountScreen() {
         } else {
           console.log('No matching user document found in Firestore');
         }
-
-        const checkInsDocs = await firestore()
-          .collection('checkIns')
-          .where('uid', '==', user.uid)
-          .get();
-
-        if (!checkInsDocs.empty) {
-          checkInsDocs.forEach(async doc => {
-            await firestore().collection('checkIns').doc(doc.id).delete();
-          });
-        } else {
-          console.log('No matching checkIns document found in Firestore');
-        }
-
-        const listenersDocs = await firestore()
-          .collection('Listeners')
-          .where('uid', '==', user.uid)
-          .get();
-
-        if (!listenersDocs.empty) {
-          listenersDocs.forEach(async doc => {
-            await firestore().collection('Listeners').doc(doc.id).delete();
-          });
-        } else {
-          console.log('No matching Listeners document found in Firestore');
-        }
-
         const {currentUser} = auth();
-
         await currentUser.delete();
       } else {
         console.log(

@@ -11,7 +11,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingTop: Platform.OS === 'ios' ? 50 : 20,
+        paddingTop: 50,
         paddingBottom: 15,
         paddingHorizontal: 15,
         backgroundColor: '#075E54',
