@@ -16,11 +16,11 @@ const ChatHeader = ({ chatName, navigation, status }) => {
           <Text style={styles.headerTitle} numberOfLines={1}>{chatName}</Text>
           {status && <Text style={styles.headerSubtitle}>{status}</Text>}
         </View>
-        <View style={styles.headerIcons}>
+        {/* <View style={styles.headerIcons}>
           <Ionicons name="videocam" size={24} color="white" style={styles.headerIcon} />
           <Ionicons name="call" size={20} color="white" style={styles.headerIcon} />
           <Ionicons name="ellipsis-vertical" size={20} color="white" style={styles.headerIcon} />
-        </View>
+        </View> */}
       </View>
     );
   };

@@ -307,7 +307,7 @@ const Home = () => {
         </View>
       </View>
 
-      <View style={styles.tabBar}>
+      {/* <View style={styles.tabBar}>
         <TouchableOpacity style={styles.tabItem}>
           <Ionicons name="people" size={24} color="#fff" />
         </TouchableOpacity>
@@ -317,7 +317,7 @@ const Home = () => {
         <TouchableOpacity style={styles.tabItem}>
           <Ionicons name="call" size={24} color="#fff" />
         </TouchableOpacity>
-      </View>
+      </View> */}
 
       <View style={styles.searchContainer}>
         <View style={styles.searchInner}>
