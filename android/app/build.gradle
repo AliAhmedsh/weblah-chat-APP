@@ -93,6 +93,12 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+            release {
+            storeFile file("my-release-key.keystore")
+            storePassword "android"
+            keyAlias "my-key-alias"
+            keyPassword "android"
+        }
     }
     buildTypes {
         debug {
@@ -106,6 +112,7 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
+
 }
 
 dependencies {
@@ -113,6 +120,7 @@ dependencies {
     implementation("com.facebook.react:react-android")
     implementation project(':react-native-vector-icons')
     implementation project(':react-native-audio-recorder-player')
+    implementation 'com.google.android.gms:play-services-maps:18.1.0'
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
     } else {
